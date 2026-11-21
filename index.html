@@ -217,10 +217,10 @@ const TOOLS={
  rampa:{n:'Kaydırak',u:2,p:3,d:'Meyveyi aşağı kaydırır. Sarı tutamağı sürükle: boyu ve eğimi değişir.'},
  bant:{n:'Konveyör',u:4,p:8,d:'Meyveyi düz ya da yokuş yukarı taşır. Ok yönünde gider, "Yön" ile çevir.'},
  kapak:{n:'Kapak',u:6,p:12,d:'Kapalıyken meyve biriktirir. Açınca hepsi birden akar ve kombo yapar.'},
- oto:{n:'Silkeleyici',u:9,p:25,d:'Seçip bir ağaca dokun. Ağacı senin yerine silkeler (ağaç başına en fazla 3).'},
- yay:{n:'Trambolin',u:13,p:15,d:'Hızla düşen meyveyi yukarı zıplatır. Uçurumları atlatmak için.'},
- fan:{n:'Fan',u:17,p:20,d:'Önündeki meyveleri üfler. Döndürerek yönünü ayarla.'},
- asansor:{n:'Asansör',u:22,p:40,d:'Meyveyi dikine yukarı taşır. Tepedeki makineler için. Tutamakla boyunu ayarla.'}};
+ oto:{n:'Silkeleyici',u:10,p:25,d:'Seçip bir ağaca dokun. Ağacı senin yerine silkeler (ağaç başına en fazla 3).'},
+ yay:{n:'Trambolin',u:8,p:15,d:'Hızla düşen meyveyi yukarı zıplatır. Uçurumları atlatmak için.'},
+ fan:{n:'Fan',u:12,p:20,d:'Önündeki meyveleri üfler. Döndürerek yönünü ayarla.'},
+ asansor:{n:'Asansör',u:15,p:40,d:'Meyveyi dikine yukarı taşır. Tepedeki makineler için. Tutamakla boyunu ayarla.'}};
 const TOOLKEYS=Object.keys(TOOLS);
 const INFO={
  el:{t:'Elle taşı',d:'Paran sıfır. Ağaca dokun, düşen meyveye basılı tut ve makinenin hunisine taşı. İlk paranı böyle kazan.'},
@@ -239,8 +239,11 @@ const INFO={
  buz:{t:'Buz kaya',d:'Sürtünmesiz, üstündeki meyve kayar.'},
  limon:{t:'Limon',d:'Yeni meyve: limon.'},
  yosun:{t:'Yosunlu kaya',d:'Yapışkan, meyveyi yavaşlatır.'},
+ ucurum:{t:'Uçurum',d:'Kırmızı taralı alana hiçbir şey kurulamaz. Rampanın ucunun altına trambolin koy, meyve karşıya zıplasın.'},
+ ruzgar:{t:'Geniş boşluk',d:'Taralı boşluğa da bir şey kurulamaz. Fanı rampanın ucunun altına, yukarı doğru eğik koy: meyveyi karşıya üfler.'},
+ yar:{t:'Yüksekteki makine',d:'Makine tepede. Bant en fazla 20° eğilir, oraya yetişmez. Meyveyi asansörle yukarı taşı.'},
  cok:{t:'Fabrika',d:'4 makineye kadar çıkabilir. Hepsini aynı anda besle.'}};
-const INTROS={1:['el','gorev','ipucu'],2:['rampa'],3:['otomatik'],4:['bant'],6:['kapak','kombo'],8:['cukur'],9:['oto'],11:['ikili'],13:['yay'],15:['catlak'],17:['fan'],20:['portakal'],22:['asansor','plato'],28:['diken'],35:['karpuz'],45:['uzum'],55:['buz'],65:['limon'],75:['yosun'],90:['cok']};
+const INTROS={1:['el','gorev','ipucu'],2:['rampa'],3:['otomatik'],4:['bant'],6:['kapak','kombo'],8:['yay','ucurum'],10:['oto'],11:['ikili'],12:['fan','ruzgar'],15:['asansor','yar'],17:['catlak'],20:['portakal'],28:['diken'],35:['karpuz'],45:['uzum'],55:['buz'],65:['limon'],75:['yosun'],90:['cok']};
 const BIOMES=[
  {n:'Elma Vadisi',sky:['#7ec3ec','#d9efe8'],hill:['#9fc79a','#6f9c6a','#4f7a4c'],grass:'#5e9e3a',dirt:['#7a5536','#4a3020'],rock:'#8a7a68',leaf:['#2f6b2a','#3f8a34','#5aa844']},
  {n:'Portakal Kıyısı',sky:['#ffb98a','#ffe6c2'],hill:['#d6a477','#b07a52','#8a5a3a'],grass:'#8aa03a',dirt:['#8a5a36','#54341e'],rock:'#a08068',leaf:['#3a6a24','#4f8a2e','#6aa83a']},
@@ -313,51 +316,80 @@ function gen(L){
   const d=Math.min(1,(L-1)/120),canBant=L>=4;
   const pool=['elma'];if(L>=20)pool.push('portakal');if(L>=35)pool.push('karpuz');if(L>=45)pool.push('uzum');if(L>=65)pool.push('limon');
   const np=L<11?1:L<30?ri(1,2):L<90?ri(1,3):ri(2,4);
-  const lvl={L,reg:regionOf(L),trees:[],jc:[],rocks:[],pits:[],movers:[],spin:[],fans:[],grav:1,storm:false,intro:INTROS[L]||[],ref:[]};
-  // çiftler: ağaç -> makine
-  const P=[];let x=200;
-  for(let k=0;k<np;k++){
-    const D=L===1?420:Math.round(Math.min(320+L*8+rf(0,140),1000));
-    // segmentler (ağaçtan makineye)
-    const segs=[];
-    if(L>=2){
-      const Dh=D+70-40,ns=Math.max(2,Math.ceil(Dh/100)),dx=Dh/ns;
-      const plato=L>=22&&R()<.3+d*.25;
-      for(let i=0;i<ns;i++){
-        let k2,sl;
-        if(i===0){k2='rampa';sl=.26}
-        else if(!canBant){k2='rampa';sl=rf(.22,.3)}
-        else if(plato){k2='bant';sl=rf(-.36,-.18)}
-        else if(R()<.45){k2='rampa';sl=rf(.22,.32)}
-        else{k2='bant';sl=rf(-.22,.1)}
-        if(i===ns-1&&i>0&&sl<0)sl=k2==='bant'?0:sl;
-        segs.push({k:k2,sl,dx});
+  const lvl={L,reg:regionOf(L),trees:[],jc:[],rocks:[],pits:[],zones:[],movers:[],spin:[],fans:[],grav:1,storm:false,intro:INTROS[L]||[],ref:[]};
+  const chAvail=[];if(L>=8)chAvail.push('yay');if(L>=12)chAvail.push('fan');if(L>=15)chAvail.push('lift');
+  const forced={8:'yay',9:'yay',12:'fan',13:'fan',15:'lift',16:'lift'};
+  /* bir ağaç -> makine çifti, ağaç (0,0) noktasında, sağa doğru */
+  function build(chs,extra){
+    const ref=[],cor=[],zones=[],lows=[];let cx=-70,cy=-125,lift=null;
+    const seg=(k,sl,dx)=>{const qx=cx+dx,qy=cy+sl*dx;ref.push({k,x0:cx,y0:cy,x1:qx,y1:qy});for(let t=0;t<=1.001;t+=.1)cor.push([cx+dx*t,cy+sl*dx*t]);cx=qx;cy=qy};
+    const hop=()=>{cx-=2;cy+=22};
+    const norm=first=>{if(first||!canBant||R()<.5)seg('rampa',first?.26:rf(.22,.3),rf(95,104));else seg('bant',rf(-.16,.08),rf(95,110))};
+    norm(true);
+    for(const c of chs){
+      if(c!=='lift'){hop();seg('bant',rf(-.04,.04),105)}
+      const E=[cx,cy];
+      if(c==='yay'){
+        for(let t=0;t<=1;t+=.1)cor.push([E[0]+t*116,E[1]+229*t*t]);
+        const T=[E[0]+118,E[1]+245];ref.push({k:'yay',x:T[0],y:T[1],a:.45,len:80});lows.push([E[0]-12,T[0]+45,T[1]+45]);
+        for(let t=0;t<=1;t+=.05)cor.push([E[0]+118+t*277,E[1]+229-4*170*t*(1-t)+t*(-29)+(t>.5?0:0)]);
+        zones.push([E[0]+170,E[0]+322]);cx=E[0]+330;cy=E[1]+190;seg('rampa',.25,108);
+      }else if(c==='fan'){
+        for(let t=0;t<=1;t+=.1)cor.push([E[0]+t*60,E[1]+80*t*t]);
+        const F=[E[0]+40,E[1]+55];ref.push({k:'fan',x:F[0],y:F[1],a:-.6,len:40});lows.push([E[0]-12,F[0]+35,F[1]+36]);
+        for(let t=0;t<=1;t+=.05)cor.push([E[0]+t*300,E[1]+150*t*t]);
+        zones.push([E[0]+72,E[0]+242]);cx=E[0]+250;cy=E[1]+140;seg('rampa',.25,110);
+      }else if(c==='lift'){
+        const b=[E[0]+2,E[1]+80],Lh=Math.round(rf(250,330)),a=-Math.PI/2+.2,top=[b[0]+Math.cos(a)*Lh,b[1]+Math.sin(a)*Lh];
+        ref.push({k:'asansor',x:b[0],y:b[1],a,len:Lh});lows.push([b[0]-45,b[0]+42,b[1]+28]);
+        for(let t=0;t<=1;t+=.05)cor.push([b[0]+(top[0]-b[0])*t,b[1]+(top[1]-b[1])*t]);
+        cx=top[0]+10;cy=top[1]+16;seg('rampa',.255,106);lift={cliff:b[0]+54};
       }
     }
-    // dikey toplam
-    let drop=0;segs.forEach((g,i)=>{drop+=g.sl*g.dx+(i?22:0)});
-    let yT=L===1?560:Math.round(rf(430,520));
-    const jyRaw=L===1?560:yT-125+drop+215;
-    if(jyRaw>740)yT-=jyRaw-740;if(jyRaw<330)yT+=330-jyRaw;
-    P.push({tx:x,D,segs,yT,plato:segs.some(g=>g.sl<-.15)});
-    x+=D+340;
+    if(!lift)for(let i=0;i<extra;i++){hop();norm(false)}
+    const jx=cx+56,jy=cy+215;
+    let maxY=jy;for(const l of lows)maxY=Math.max(maxY,l[2]);
+    return{ref,cor,zones,lows,lift,jx,jy,maxY,chs};
+  }
+  const P=[];let x=200;
+  for(let k=0;k<np;k++){
+    let p;const fruit=pick(pool);
+    if(L===1)p={ref:[],cor:[],zones:[],lows:[],lift:null,jx:420,jy:0,maxY:0,chs:[],yT:560};
+    else{
+      let chs=[];
+      if(forced[L]&&k===0)chs=[forced[L]];
+      else if(L>=10&&chAvail.length&&R()<Math.min(.85,.45+(L-10)*.02)){chs=[pick(chAvail)];if(L>=25&&chs[0]!=='lift'&&chAvail.includes('lift')&&R()<.35)chs.push('lift')}
+      if(fruit==='karpuz')chs=chs.filter(c=>c==='lift');
+      const D=Math.min(320+L*8+rf(0,140),1000),extra=chs.length?ri(0,1):Math.max(1,Math.ceil((D+30)/100)-1);
+      p=build(chs,extra);
+      while(p.maxY>440&&p.chs.length){p=build(p.chs.slice(0,p.chs.length-1),chs.length>1?0:1)}
+      let yT=Math.round(rf(430,520));if(yT+p.maxY>750)yT=750-p.maxY;if(yT+p.jy<300)yT=300-p.jy;yT=Math.max(300,yT);p.yT=yT;
+    }
+    p.fruit=fruit;p.off=x;P.push(p);x+=p.jx+340;
   }
   const W=Math.max(1400,Math.round((x-340+260)/20)*20);
   const flip=L>=10&&R()<.4;
-  const fx=v=>flip?W-v:v;
-  // segmentleri ve makineleri yerleştir
+  const segAbs=[],corAbs=[],lowsAbs=[],cliffs=[];
   for(const p of P){
-    const dir=flip?-1:1,tx=fx(p.tx);
-    let px=tx-dir*70,py=p.yT-125;
-    for(let i=0;i<p.segs.length;i++){const g=p.segs[i];
-      if(i){px-=dir*2;py+=22}
-      const qx=px+dir*g.dx,qy=py+g.sl*g.dx,len=Math.hypot(qx-px,qy-py);
-      lvl.ref.push({k:g.k,x:(px+qx)/2,y:(py+qy)/2,a:Math.atan2(qy-py,qx-px),len:Math.round(len),dir:1});
-      px=qx;py=qy}
-    const jx=L===1?tx+dir*p.D:px+dir*56,jy=L===1?p.yT:py+215;
-    p.jx=jx;p.jy=jy;p.tx2=tx;p.dir=dir;
-    lvl.trees.push({x:tx,f:pick(pool)});
-    lvl.jc.push({x:Math.round(jx),y:Math.round(jy),acc:null,m:p.plato?'plato':'flat'});
+    const X=v=>flip?W-(p.off+v):p.off+v,Y=v=>p.yT+v;
+    for(const r of p.ref){
+      if(r.k==='rampa'||r.k==='bant'){
+        const x0=X(r.x0),y0=Y(r.y0),x1=X(r.x1),y1=Y(r.y1);let a=Math.atan2(y1-y0,x1-x0),dir=1;
+        if(a>Math.PI/2){a-=Math.PI;dir=-1}else if(a<-Math.PI/2){a+=Math.PI;dir=-1}
+        lvl.ref.push({k:r.k,x:(x0+x1)/2,y:(y0+y1)/2,a,len:Math.round(Math.hypot(x1-x0,y1-y0)),dir:r.k==='bant'?dir:1});segAbs.push([x0,y0,x1,y1]);
+      }else{
+        const a=r.k==='yay'?(flip?-r.a:r.a):(flip?Math.PI-r.a:r.a);
+        lvl.ref.push({k:r.k,x:X(r.x),y:Y(r.y),a,len:r.len,dir:1});
+      }
+    }
+    for(const c of p.cor)corAbs.push([X(c[0]),Y(c[1])]);
+    for(const z of p.zones){const a=Math.min(X(z[0]),X(z[1])),b=Math.max(X(z[0]),X(z[1]));lvl.zones.push({x0:a,x1:b});lvl.pits.push([a,b])}
+    for(const l of p.lows)lowsAbs.push([Math.min(X(l[0]),X(l[1])),Math.max(X(l[0]),X(l[1])),Y(l[2])]);
+    p.tx2=X(0);p.jxA=Math.round(X(p.jx));p.jyA=Math.round(Y(p.jy));
+    if(p.lift)cliffs.push({a:X(p.lift.cliff),b:p.jxA,y:p.jyA});
+    lvl.trees.push({x:p.tx2,f:p.fruit});
+    lvl.jc.push({x:p.jxA,y:p.jyA,acc:null,m:p.lift?'plato':'flat'});
+    p.jx=p.jxA;p.jy=p.jyA;
   }
   // arazi
   const step=20,n=Math.round(W/step)+1,h=new Array(n);
@@ -367,22 +399,28 @@ function gen(L){
   for(let i=0;i<n;i++){const xx=i*step;h[i]=base(xx)+Math.sin(xx/170+p1)*amp+Math.sin(xx/63+p2)*amp*.3}
   const flat=(cx,r,y,tr=70)=>{for(let i=0;i<n;i++){const dx=Math.abs(i*step-cx);if(dx<r)h[i]=y;else if(dx<r+tr){const k=(dx-r)/tr,e=k*k*(3-2*k);h[i]=y*(1-e)+h[i]*e}}};
   for(const p of P){flat(p.tx2,60,p.yT);flat(p.jx,100,p.jy)}
+  // yar: makinenin olduğu yüksek düzlük, dik kenarlı
+  for(const c of cliffs){const a=Math.min(c.a,c.b+(c.b>c.a?120:-120)),b=Math.max(c.a,c.b+(c.b>c.a?120:-120));for(let i=0;i<n;i++){const xx=i*step;if(xx>=a&&xx<=b)h[i]=c.y}}
   // çözüm yolunun altında arazi kalsın
-  const pathLow=xx=>{let m=-1e9;for(const r of lvl.ref){const c=Math.cos(r.a),sn=Math.sin(r.a);let x0=r.x-c*r.len/2,y0=r.y-sn*r.len/2,x1=r.x+c*r.len/2,y1=r.y+sn*r.len/2;if(x0>x1){[x0,x1]=[x1,x0];[y0,y1]=[y1,y0]}if(xx>=x0-20&&xx<=x1+20){const t=Math.max(0,Math.min(1,(xx-x0)/(x1-x0||1)));m=Math.max(m,y0+(y1-y0)*t+6)}}return m};
-  for(let i=0;i<n;i++){const lo=pathLow(i*step);if(lo>-1e8)h[i]=Math.max(h[i],lo+70)}
+  const pathLow=xx=>{let m=-1e9;for(let[x0,y0,x1,y1]of segAbs){if(x0>x1){[x0,x1]=[x1,x0];[y0,y1]=[y1,y0]}if(xx>=x0-20&&xx<=x1+20){const t=Math.max(0,Math.min(1,(xx-x0)/(x1-x0||1)));m=Math.max(m,y0+(y1-y0)*t+6)}}return m};
+  for(let i=0;i<n;i++){const xx=i*step,lo=pathLow(xx);if(lo>-1e8&&!cliffs.some(c=>xx>=Math.min(c.a,c.b)&&xx<=Math.max(c.a,c.b)))h[i]=Math.max(h[i],lo+70);
+    for(const l of lowsAbs)if(xx>=l[0]-10&&xx<=l[1]+10)h[i]=Math.max(h[i],l[2])}
   for(let i=0;i<n;i++)h[i]=Math.max(260,Math.min(770,h[i]));
   lvl.h=h;lvl.step=step;lvl.W=W;
   const gy=xx=>h[Math.max(0,Math.min(n-1,Math.round(xx/step)))];
-  // çukurlar (yolun altında olabilir)
-  if(L>=8)for(const p of P){if(R()<.55){const a=Math.min(p.tx2,p.jx),b=Math.max(p.tx2,p.jx);const w=ri(90,150+Math.floor(d*90));const cx=rf(a+150+w/2,b-170-w/2);if(b-a>w+330)lvl.pits.push([cx-w/2,cx+w/2])}}
+  const inZone=xx=>lvl.zones.some(z=>xx>z.x0-60&&xx<z.x1+60);
+  // ek çukurlar (engelsiz çiftlerde)
+  if(L>=8)for(const p of P){if(p.chs.length||R()>=.55)continue;const a=Math.min(p.tx2,p.jx),b=Math.max(p.tx2,p.jx);const w=ri(90,150+Math.floor(d*90));const cx=rf(a+150+w/2,b-170-w/2);if(b-a>w+330&&!inZone(cx))lvl.pits.push([cx-w/2,cx+w/2])}
+  for(const pt of lvl.pits)for(let i=0;i<n;i++){const xx=i*step;if(xx>pt[0]&&xx<pt[1])h[i]=770}
   // engeller: çözümün koridoruna girmez
-  const segPts=[];for(const r of lvl.ref){const c=Math.cos(r.a),s=Math.sin(r.a);for(let t=-r.len/2;t<=r.len/2;t+=10)segPts.push([r.x+c*t,r.y+s*t])}
+  const segPts=corAbs;
   const nr=L<5?0:Math.min(12,P.length*(1+Math.floor(d*4))+ri(0,1));let a=0;
   while(lvl.rocks.length<nr&&a++<400){
     const xx=rf(80,W-80),kind=R();let r;
     if(kind<.35)r={k:'c',x:xx,y:gy(xx)-rf(90,330),r:ri(22,46)};
     else if(kind<.7)r={k:'r',x:xx,y:gy(xx)-rf(110,340),w:ri(80,190),h:22,a:rf(-.5,.5)};
     else r={k:'r',x:xx,y:gy(xx)-ri(40,80),w:28,h:ri(80,150),a:rf(-.12,.12)};
+    if(inZone(xx))continue;
     if(segPts.some(q=>segDist(q[0],q[1],r)<58))continue;
     if(P.some(p=>Math.abs(xx-p.tx2)<120&&r.y<p.yT+20))continue;
     if(P.some(p=>Math.abs(xx-p.jx)<150&&r.y>p.jy-300))continue;
@@ -390,7 +428,7 @@ function gen(L){
     if(segDist(xx,gy(xx)-2,r)<4&&r.k!=='r')continue;
     if(L>=55&&R()<.2)r.m='buz';else if(L>=75&&R()<.18)r.m='yosun';
     if(L>=28&&r.k==='r'&&r.h<30&&R()<.25&&segPts.every(q=>segDist(q[0],q[1],r)>90))r.spike=1;
-    if(L>=15&&R()<.18)r.crack=ri(5,10);
+    if(L>=17&&R()<.18)r.crack=ri(5,10);
     lvl.rocks.push(r);
   }
   lvl.drain=L<3?1.2:Math.min(6,2.5+L*.06);
@@ -440,36 +478,50 @@ function noisePattern(base,dark,light,size,dens){
 }
 function fruitSprite(k){
   const F=FR[k],S=4,r=F.r*S,pad=8*S,c=cnv(r*2+pad*2,r*2+pad*2),x=c.getContext('2d');x.translate(r+pad,r+pad);
-  const ball=(cx,cy,rr,c1,c2,c3)=>{const g=x.createRadialGradient(cx-rr*.35,cy-rr*.4,rr*.1,cx,cy,rr);g.addColorStop(0,c1);g.addColorStop(.55,c2);g.addColorStop(1,c3);x.fillStyle=g;x.beginPath();x.arc(cx,cy,rr,0,7);x.fill()};
+  const OL='#2a1408',lw=S*1.15;x.lineJoin='round';x.lineCap='round';
+  const shade=(c1,c2,c3,rr=r,ox=0,oy=0)=>{const g=x.createRadialGradient(ox-rr*.38,oy-rr*.42,rr*.05,ox,oy,rr*1.08);g.addColorStop(0,c1);g.addColorStop(.5,c2);g.addColorStop(1,c3);return g};
+  const gloss=(ox,oy,rr)=>{x.save();x.fillStyle='rgba(255,255,255,.82)';x.beginPath();x.ellipse(ox-rr*.38,oy-rr*.42,rr*.30,rr*.17,-.6,0,7);x.fill();
+    x.fillStyle='rgba(255,255,255,.9)';x.beginPath();x.arc(ox-rr*.02,oy-rr*.62,rr*.07,0,7);x.fill();
+    x.globalAlpha=.25;x.strokeStyle='#fff';x.lineWidth=rr*.08;x.beginPath();x.arc(ox,oy,rr*.78,.35,1.25);x.stroke();x.restore()};
+  const rim=(path)=>{x.save();path();x.clip();x.globalAlpha=.35;x.strokeStyle='#000';x.lineWidth=r*.22;path();x.stroke();x.restore()};
+  const leaf=(lx,ly,ang,sz,c1='#5fbf3a',c2='#2f7d1e')=>{x.save();x.translate(lx,ly);x.rotate(ang);const g=x.createLinearGradient(0,-sz*.4,0,sz*.4);g.addColorStop(0,c1);g.addColorStop(1,c2);
+    x.fillStyle=g;x.beginPath();x.moveTo(0,0);x.quadraticCurveTo(sz*.5,-sz*.55,sz,0);x.quadraticCurveTo(sz*.5,sz*.55,0,0);x.fill();x.strokeStyle=OL;x.lineWidth=lw*.8;x.stroke();
+    x.strokeStyle='rgba(255,255,255,.45)';x.lineWidth=S*.5;x.beginPath();x.moveTo(sz*.1,0);x.lineTo(sz*.85,0);x.stroke();x.restore()};
+  const stem=(x0,y0,x1,y1)=>{x.strokeStyle=OL;x.lineWidth=S*2.6;x.beginPath();x.moveTo(x0,y0);x.quadraticCurveTo((x0+x1)/2+S,(y0+y1)/2,x1,y1);x.stroke();x.strokeStyle='#8a5a2a';x.lineWidth=S*1.3;x.stroke()};
   if(k==='elma'){
-    x.fillStyle=F.c2;const g=x.createRadialGradient(-r*.35,-r*.35,r*.1,0,0,r*1.05);g.addColorStop(0,F.c1);g.addColorStop(.6,F.c2);g.addColorStop(1,F.c3);x.fillStyle=g;
-    x.beginPath();x.moveTo(0,-r*.72);x.bezierCurveTo(r*.55,-r*1.15,r*1.15,-r*.6,r*1.0,r*.1);x.bezierCurveTo(r*.9,r*.8,r*.35,r*1.05,0,r*.9);x.bezierCurveTo(-r*.35,r*1.05,-r*.9,r*.8,-r*1.0,r*.1);x.bezierCurveTo(-r*1.15,-r*.6,-r*.55,-r*1.15,0,-r*.72);x.fill();
-    x.strokeStyle='#ffd0a0';x.globalAlpha=.25;x.lineWidth=S*.6;for(let i=0;i<14;i++){const a=i/14*Math.PI*2;x.beginPath();x.moveTo(Math.cos(a)*r*.3,Math.sin(a)*r*.3-r*.1);x.lineTo(Math.cos(a)*r*.7,Math.sin(a)*r*.7);x.stroke()}x.globalAlpha=1;
-    x.strokeStyle='#4a2a12';x.lineWidth=S*1.6;x.lineCap='round';x.beginPath();x.moveTo(0,-r*.65);x.quadraticCurveTo(r*.05,-r*1.0,r*.18,-r*1.22);x.stroke();
-    const lg=x.createLinearGradient(r*.1,-r*1.2,r*.8,-r*.9);lg.addColorStop(0,'#3f8a2a');lg.addColorStop(1,'#7ac04a');x.fillStyle=lg;
-    x.beginPath();x.moveTo(r*.12,-r*1.05);x.quadraticCurveTo(r*.55,-r*1.5,r*.85,-r*1.05);x.quadraticCurveTo(r*.5,-r*.85,r*.12,-r*1.05);x.fill();
-    x.strokeStyle='#2a5a1a';x.lineWidth=S*.5;x.beginPath();x.moveTo(r*.14,-r*1.05);x.lineTo(r*.8,-r*1.06);x.stroke();
+    const path=()=>{x.beginPath();x.moveTo(0,-r*.62);x.bezierCurveTo(r*.45,-r*1.05,r*1.12,-r*.75,r*1.02,r*.05);x.bezierCurveTo(r*.95,r*.75,r*.45,r*1.02,r*.12,r*.9);x.quadraticCurveTo(0,r*.84,-r*.12,r*.9);x.bezierCurveTo(-r*.45,r*1.02,-r*.95,r*.75,-r*1.02,r*.05);x.bezierCurveTo(-r*1.12,-r*.75,-r*.45,-r*1.05,0,-r*.62);x.closePath()};
+    stem(0,-r*.55,r*.12,-r*1.12);leaf(r*.1,-r*.98,-.45,r*.72);
+    x.fillStyle=shade('#ff8a7a','#ec2b2b','#8e0e18');path();x.fill();rim(path);
+    x.save();path();x.clip();x.globalAlpha=.18;x.fillStyle='#ffd25a';x.beginPath();x.ellipse(-r*.55,r*.1,r*.35,r*.55,.3,0,7);x.fill();x.restore();
+    x.strokeStyle=OL;x.lineWidth=lw;path();x.stroke();
+    x.strokeStyle='rgba(90,10,10,.5)';x.lineWidth=S*.9;x.beginPath();x.arc(0,-r*.6,r*.14,.4,Math.PI-.4);x.stroke();
+    gloss(-r*.05,0,r);
   }else if(k==='portakal'){
-    ball(0,0,r,F.c1,F.c2,F.c3);
-    const R=rng(9);for(let i=0;i<220;i++){const a=R()*7,d=Math.sqrt(R())*r*.95;x.fillStyle=R()<.5?'#ffffff':'#7a3a00';x.globalAlpha=.08;x.beginPath();x.arc(Math.cos(a)*d,Math.sin(a)*d,S*.7,0,7);x.fill()}x.globalAlpha=1;
-    x.fillStyle='#5a7a20';x.beginPath();x.arc(r*.15,-r*.88,S*1.6,0,7);x.fill();
+    const path=()=>{x.beginPath();x.ellipse(0,r*.03,r*1.02,r*.96,0,0,7)};
+    x.fillStyle=shade('#ffd27a','#ff9419','#b54e04');path();x.fill();
+    x.save();path();x.clip();const R=rng(9);for(let i=0;i<170;i++){const a=R()*7,d=Math.sqrt(R())*r;x.fillStyle=R()<.6?'rgba(150,60,0,.16)':'rgba(255,255,255,.18)';x.beginPath();x.arc(Math.cos(a)*d,Math.sin(a)*d,S*.75,0,7);x.fill()}x.restore();
+    rim(path);x.strokeStyle=OL;x.lineWidth=lw;path();x.stroke();
+    x.fillStyle='#4f7a1c';x.strokeStyle=OL;x.lineWidth=lw*.7;x.beginPath();for(let i=0;i<5;i++){const a=i/5*Math.PI*2-Math.PI/2;x.lineTo(Math.cos(a)*r*.2,-r*.86+Math.sin(a)*r*.12);x.lineTo(Math.cos(a+.63)*r*.08,-r*.86+Math.sin(a+.63)*r*.05)}x.closePath();x.fill();x.stroke();
+    leaf(r*.08,-r*.9,-.3,r*.6);gloss(0,0,r);
   }else if(k==='limon'){
-    const g=x.createRadialGradient(-r*.4,-r*.35,r*.1,0,0,r*1.2);g.addColorStop(0,F.c1);g.addColorStop(.6,F.c2);g.addColorStop(1,F.c3);x.fillStyle=g;
-    x.beginPath();x.moveTo(-r*1.3,0);x.bezierCurveTo(-r*1.1,-r*.95,r*1.1,-r*.95,r*1.3,0);x.bezierCurveTo(r*1.1,r*.95,-r*1.1,r*.95,-r*1.3,0);x.fill();
-    const R=rng(3);for(let i=0;i<160;i++){x.fillStyle='#ffffff';x.globalAlpha=.08;x.beginPath();x.arc((R()-.5)*r*2,(R()-.5)*r*1.4,S*.6,0,7);x.fill()}x.globalAlpha=1;
+    const path=()=>{x.beginPath();x.moveTo(-r*1.32,0);x.quadraticCurveTo(-r*1.22,-r*.28,-r*1.0,-r*.42);x.bezierCurveTo(-r*.55,-r*.98,r*.55,-r*.98,r*1.0,-r*.42);x.quadraticCurveTo(r*1.22,-r*.28,r*1.32,0);x.quadraticCurveTo(r*1.22,r*.28,r*1.0,r*.42);x.bezierCurveTo(r*.55,r*.98,-r*.55,r*.98,-r*1.0,r*.42);x.quadraticCurveTo(-r*1.22,r*.28,-r*1.32,0);x.closePath()};
+    x.fillStyle=shade('#fffbb0','#ffe02a','#b9940a');path();x.fill();
+    x.save();path();x.clip();const R=rng(3);for(let i=0;i<120;i++){x.fillStyle='rgba(160,120,0,.15)';x.beginPath();x.arc((R()-.5)*r*2.4,(R()-.5)*r*1.6,S*.6,0,7);x.fill()}x.restore();
+    rim(path);x.strokeStyle=OL;x.lineWidth=lw;path();x.stroke();
+    leaf(r*.5,-r*.62,-.7,r*.65);gloss(-r*.15,r*.05,r*.95);
   }else if(k==='uzum'){
-    const pts=[[0,-.45],[-.42,-.25],[.42,-.25],[-.2,.12],[.25,.12],[0,.5],[-.48,.28],[.48,.3]];
-    for(const[px,py]of pts)ball(px*r,py*r,r*.42,F.c1,F.c2,F.c3);
-    x.strokeStyle='#4a6a20';x.lineWidth=S*1.4;x.beginPath();x.moveTo(0,-r*.8);x.lineTo(r*.12,-r*1.15);x.stroke();
+    stem(0,-r*.55,r*.05,-r*1.15);leaf(r*.05,-r*.95,-.35,r*.75,'#6cc24a','#2f7d1e');
+    const pts=[[0,.55],[-.42,.22],[.42,.22],[-.62,-.2],[0,-.12],[.62,-.2],[-.3,-.52],[.3,-.52]];
+    for(const[px,py]of pts){const rr=r*.4,cx=px*r,cy=py*r;x.fillStyle=shade('#d9a8ff','#8a3cc4','#3c0f5c',rr,cx,cy);x.beginPath();x.arc(cx,cy,rr,0,7);x.fill();
+      x.strokeStyle=OL;x.lineWidth=lw*.8;x.stroke();x.fillStyle='rgba(255,255,255,.8)';x.beginPath();x.ellipse(cx-rr*.35,cy-rr*.38,rr*.24,rr*.14,-.6,0,7);x.fill()}
   }else if(k==='karpuz'){
-    ball(0,0,r,F.c1,F.c2,F.c3);
-    x.save();x.beginPath();x.arc(0,0,r,0,7);x.clip();x.strokeStyle='#103a14';x.globalAlpha=.75;x.lineWidth=r*.13;
-    for(let i=-3;i<=3;i++){x.beginPath();for(let y=-r;y<=r;y+=S*2){const xx=i*r*.32+Math.sin(y/(r*.18))*r*.05;y===-r?x.moveTo(xx,y):x.lineTo(xx,y)}x.stroke()}
-    x.restore();x.globalAlpha=1;
+    const path=()=>{x.beginPath();x.ellipse(0,0,r*1.02,r*.97,0,0,7)};
+    x.fillStyle=shade('#9be37a','#3e9e32','#164a18');path();x.fill();
+    x.save();path();x.clip();x.strokeStyle='#123d14';x.lineWidth=r*.16;
+    for(let i=-3;i<=3;i++){x.beginPath();for(let y=-r;y<=r;y+=S*1.5){const xx=i*r*.34+Math.sin(y/(r*.16)+i)*r*.06;y===-r?x.moveTo(xx,y):x.lineTo(xx,y)}x.stroke()}
+    x.restore();rim(path);x.strokeStyle=OL;x.lineWidth=lw;path();x.stroke();
+    x.fillStyle='#6a4a1e';x.beginPath();x.arc(0,-r*.95,S*1.4,0,7);x.fill();gloss(0,0,r);
   }
-  // parlama
-  const hg=x.createRadialGradient(-r*.4,-r*.45,0,-r*.4,-r*.45,r*.5);hg.addColorStop(0,'rgba(255,255,255,.75)');hg.addColorStop(1,'rgba(255,255,255,0)');
-  x.fillStyle=hg;x.beginPath();x.arc(-r*.4,-r*.45,r*.5,0,7);x.fill();
   c.k=S;return c;
 }
 function treeSprite(f,bio,seed){
@@ -586,10 +638,23 @@ function startLevel(L,fresh){
   buildTerrainArt();
   G.hint=false;$('bHint').style.background='';
   showGame();renderTools();renderTasks();updHud();resize();fitCam(true);
+  const hadRun=!!(SV.run&&SV.run.L===L);
   restoreRun();SV.last=L;save();
+  SV.tour=SV.tour||{};if(!hadRun&&L>1&&!SV.tour[L]){SV.tour[L]=1;save();startTour()}
   if(L===1&&!SV.seen.tut&&starsOf(1)<2){SV.seen[1]=1;save();startCoach()}
   else if(lvd.intro.length&&!SV.seen[L])introModal();
 }
+
+/* ---- bölüm turu: kamera haritayı gezer ---- */
+function startTour(){const c0={x:G.cam.x,y:G.cam.y,s:G.cam.s};fitCam(false);const ov={x:G.cam.x,y:G.cam.y,s:G.cam.s};
+  const vw=cw/c0.s,left=c0.x+vw/2<G.W/2,xFar=left?Math.max(0,G.W-vw):0,xNear=left?0:Math.max(0,G.W-vw);
+  G.tour={t:0,c0,ov,xFar,xNear,dP:Math.min(6,Math.max(1.6,Math.abs(xFar-xNear)/600))};Object.assign(G.cam,ov);toast('Bölümün haritası · geçmek için dokun')}
+function camYFor(x,s){const vw=cw/s,vh=ch/s;let m=0,n=0;for(let X=x;X<=x+vw;X+=40){m+=gyAt(Math.max(0,Math.min(G.W-1,X)));n++}return m/n-vh*.6}
+function tourTick(dt){const T=G.tour;T.t+=dt;const s=T.c0.s,A=1.2,B=.9,C=T.dP,D=.9;let t=T.t,c;
+  const mix=(a,b,k)=>({x:a.x+(b.x-a.x)*k,y:a.y+(b.y-a.y)*k,s:a.s*Math.pow(b.s/a.s,k)}),at=x=>({x,y:camYFor(x,s),s});
+  if(t<A)c=T.ov;else if((t-=A)<B)c=mix(T.ov,at(T.xFar),ez(t/B));else if((t-=B)<C)c=at(T.xFar+(T.xNear-T.xFar)*ez(t/C));
+  else if((t-=C)<D)c=mix(at(T.xNear),T.c0,ez(t/D));else{c=T.c0;G.tour=null}
+  Object.assign(G.cam,c);clampCam();if(G.sel)placeSelp()}
 function makeSpinner(x,y,len,w){
   const body=Body.create({parts:[Bodies.rectangle(x,y,len,14,{chamfer:{radius:6}}),Bodies.rectangle(x,y,14,len,{chamfer:{radius:6}})],frictionAir:0,density:.02,collisionFilter:{category:SPIN,mask:FRMASK}});
   Body.setPosition(body,{x,y});const con=Constraint.create({pointA:{x,y},bodyB:body,pointB:{x:0,y:0},stiffness:1,length:0});
@@ -661,7 +726,7 @@ const countOf=k=>k==='oto'?G.oto.reduce((a,b)=>a+b,0):G.tools.filter(p=>p.k===k)
 const price=k=>Math.round(TOOLS[k].p*Math.pow(1.1,countOf(k)));
 const unlocked=()=>TOOLKEYS.filter(k=>TOOLS[k].u<=G.L);
 const defLen={rampa:110,kapak:90,bant:110,yay:70,suzgec:90,asansor:160};
-const maxLen=k=>k==='rampa'?rampaMax(lv('rampa_boy')):k==='bant'?bantMax(lv('bant_boy')):k==='asansor'?280:defLen[k]||100;
+const maxLen=k=>k==='rampa'?rampaMax(lv('rampa_boy')):k==='bant'?bantMax(lv('bant_boy')):k==='asansor'?360:defLen[k]||100;
 function mkBody(p){
   const S=o=>Object.assign({isStatic:true,friction:.06,frictionStatic:.15},o);
   const c=Math.cos(p.a),s=Math.sin(p.a);
@@ -693,8 +758,13 @@ function ends(p){const c=Math.cos(p.a),s=Math.sin(p.a);
   return[{x:p.x-c*p.len/2,y:p.y-s*p.len/2},{x:p.x+c*p.len/2,y:p.y+s*p.len/2}]}
 const resizable=p=>['rampa','bant','asansor','kapak','yay','suzgec'].includes(p.k);
 /* yerleştirme kontrolü */
+const BELT_MAX=.35;
 function validTool(p){
-  const px=p.b?p.b.position.x:p.x,py=p.b?p.b.position.y:p.y;return px>5&&px<G.W-5&&py>-250&&py<H+20;
+  const px=p.b?p.b.position.x:p.x,py=p.b?p.b.position.y:p.y;G.badWhy='';if(!(px>5&&px<G.W-5&&py>-250&&py<H+20))return false;
+  if(p.k==='bant'&&Math.abs(Math.sin(p.a))>Math.sin(BELT_MAX)+1e-3){G.badWhy='Bant en fazla 20° eğilebilir';return false}
+  let x0,x1;if(p.b){x0=p.b.bounds.min.x;x1=p.b.bounds.max.x}else if(p.k==='asansor'){const e=ends(p);x0=Math.min(e[0].x,e[1].x)-24;x1=Math.max(e[0].x,e[1].x)+24}else{x0=p.x-22;x1=p.x+22}
+  for(const z of G.lv.zones||[])if(x1>z.x0&&x0<z.x1){G.badWhy='Taralı alana bir şey kurulamaz';return false}
+  return true;
   const pts=[];
   if(p.k==='portal'){pts.push({x:p.x,y:p.y,r:18},{x:p.x2,y:p.y2,r:18})}
   else if(p.k==='asansor'){const e=ends(p);for(let i=0;i<=6;i++)pts.push({x:e[0].x+(e[1].x-e[0].x)*i/6,y:e[0].y+(e[1].y-e[0].y)*i/6,r:14})}
@@ -769,7 +839,7 @@ function step(dt){
     for(const fn of fans){const dx=p.x-fn.x,dy=p.y-fn.y,c=Math.cos(fn.a),s=Math.sin(fn.a),al=dx*c+dy*s,pe=-dx*s+dy*c;if(al>0&&al<fn.rg&&Math.abs(pe)<34){const k=m*.0014*fn.pw*(1-al/(fn.rg*1.15));Body.applyForce(f,p,{x:c*k,y:s*k})}}
     for(const bt of bants){if(Query.collides(f,[bt.b]).length){const c=Math.cos(bt.a)*bt.dir,s=Math.sin(bt.a)*bt.dir,vt=f.velocity.x*c+f.velocity.y*s,tg=3.4*bantHiz(lv('bant_hiz')),dv=(tg-vt)*.3;Body.setVelocity(f,{x:f.velocity.x+c*dv,y:f.velocity.y+s*dv})}}
     for(const lf of lifts){const c=Math.cos(lf.a),s=Math.sin(lf.a),dx=p.x-lf.x,dy=p.y-lf.y,al=dx*c+dy*s,pe=-dx*s+dy*c;
-      if(al>-14&&al<lf.len&&Math.abs(pe)<26){const v=3.2*(1+lv('asan_hiz')*.2);if(al>lf.len-6){Body.setVelocity(f,{x:c*v+(-s)*0,y:s*v})}else Body.setVelocity(f,{x:c*v-(-s)*pe*-.08,y:s*v+c*pe*-.08});f.idle=0}}
+      if(al>-14&&al<lf.len&&Math.abs(pe)<26){const v=3.2*(1+lv('asan_hiz')*.2);if(al>lf.len-6){Body.setVelocity(f,{x:c*v+(-s)*0,y:s*v})}else Body.setVelocity(f,{x:c*v+s*pe*.12,y:s*v-c*pe*.12});f.idle=0}}
     f.tcd-=dt;
     if(f.tcd<=0)for(const tp of tops){const c=Math.cos(tp.a),s=Math.sin(tp.a),ix=tp.x-c*28,iy=tp.y-s*28;if(Math.hypot(p.x-ix,p.y-iy)<20){const pw=13*(1+lv('top_guc')*.1);Body.setPosition(f,{x:tp.x+c*54,y:tp.y+s*54});Body.setVelocity(f,{x:c*pw,y:s*pw});f.tcd=.4;tp.kick=1;sfx('pop');break}}
     f.pcd-=dt;
@@ -861,8 +931,12 @@ function hitTool(w,rad){
     if(Math.hypot(w.x-(e[0].x+dx*t),w.y-(e[0].y+dy*t))<rad+12)return{p};
   }return null;
 }
+const LP_MS=400;
+const mvAct=(h,w,e)=>({t:'move',p:h.p,e2:h.e2,ox:(h.e2?h.p.x2:h.p.x)-w.x,oy:(h.e2?h.p.y2:h.p.y)-w.y,moved:false,sx:e.clientX,sy:e.clientY,lx:h.e2?h.p.x2:h.p.x,ly:h.e2?h.p.y2:h.p.y});
+function longPress(){const a=act;select(a.h.p);try{navigator.vibrate&&navigator.vibrate(25)}catch(e){}sfx('place');act=mvAct(a.h,a.w,{clientX:a.sx,clientY:a.sy})}
 cv.addEventListener('pointerdown',e=>{
-  if(!G||!$('modal').hidden)return;cv.setPointerCapture(e.pointerId);
+  if(!G||!$('modal').hidden)return;
+  if(G.tour){Object.assign(G.cam,G.tour.c0);clampCam();G.tour=null;return}cv.setPointerCapture(e.pointerId);
   ptrs.set(e.pointerId,{x:e.clientX-OX,y:e.clientY-OY});
   if(ptrs.size===2){const[a,b]=[...ptrs.values()];const cx=(a.x+b.x)/2,cy=(a.y+b.y)/2;pinch={d:Math.hypot(a.x-b.x,a.y-b.y)||1,s:G.cam.s,w:s2w(cx,cy)};dropAct();return}
   if(ptrs.size>2)return;
@@ -879,14 +953,16 @@ cv.addEventListener('pointerdown',e=>{
     act={t:'grab',lx:w.x,ly:w.y,lt:performance.now(),vx:0,vy:0,moved:false,sx:e.clientX,sy:e.clientY};return}
   // ağaç
   const ti=G.trees.findIndex(t=>Math.abs(w.x-t.x)<70&&w.y>t.y-240&&w.y<t.y+4);
-  if(ti>=0&&!ht){
+  if(ht&&ht.p===G.sel){act=mvAct(ht,w,e);return}
+  if(ti>=0){
+    if(ht&&G.arm!=='oto'){act={t:'press',h:ht,ti,t0:performance.now(),sx:e.clientX,sy:e.clientY,w};return}
     if(G.arm==='oto'){if(G.oto[ti]>=3){toast('Bu ağaçta 3 silkeleyici var');return}const pr=price('oto');if(G.cash<pr){toast(`Silkeleyici $${pr}. Daha çok meyve sık!`);return}G.cash-=pr;G.oto[ti]++;sfx('buy');renderTools();return}
     shakeTree(ti);act={t:'tree'};return}
-  if(ht){select(ht.p);act={t:'move',p:ht.p,e2:ht.e2,ox:(ht.e2?ht.p.x2:ht.p.x)-w.x,oy:(ht.e2?ht.p.y2:ht.p.y)-w.y,moved:false,sx:e.clientX,sy:e.clientY,lx:ht.e2?ht.p.x2:ht.p.x,ly:ht.e2?ht.p.y2:ht.p.y};return}
+  if(ht){act={t:'press',h:ht,ti:-1,t0:performance.now(),sx:e.clientX,sy:e.clientY,w};return}
   if(G.arm&&G.arm!=='oto'){
     const pr=price(G.arm);if(G.cash<pr){toast(`${TOOLS[G.arm].n} $${pr}. Önce meyve sıkıp para kazan.`);act=null;return}
     const p=addTool(G.arm,w.x,w.y);
-    if(!validTool(p)){removeTool(p);toast('Buraya konamaz: başka bir şeyin üstüne geliyor');act=null;return}
+    if(!validTool(p)){removeTool(p);toast(G.badWhy||'Buraya konamaz');act=null;return}
     G.cash-=pr;sfx('place');select(p);renderTools();act={t:'move',p,ox:0,oy:0,moved:true,sx:e.clientX,sy:e.clientY,lx:p.x,ly:p.y,fresh:true};return}
   if(G.arm==='oto')toast('Silkeleyiciyi bir ağaca dokunarak tak');
   select(null);act=null;
@@ -895,6 +971,7 @@ cv.addEventListener('pointermove',e=>{
   if(!G||!ptrs.has(e.pointerId))return;ptrs.set(e.pointerId,{x:e.clientX-OX,y:e.clientY-OY});
   if(pinch&&ptrs.size===2){const[a,b]=[...ptrs.values()],d=Math.hypot(a.x-b.x,a.y-b.y),cx=(a.x+b.x)/2,cy=(a.y+b.y)/2;G.cam.s=pinch.s*d/pinch.d;clampCam();G.cam.x=pinch.w.x-cx/G.cam.s;G.cam.y=pinch.w.y-cy/G.cam.s;clampCam();placeSelp();return}
   if(!act)return;const w=s2w(e.clientX-OX,e.clientY-OY);
+  if(act.t==='press'){if(Math.hypot(e.clientX-act.sx,e.clientY-act.sy)>12)act=null;return}
   if(act.t==='pan'){G.cam.x=act.cx-(e.clientX-act.sx)/G.cam.s;G.cam.y=act.cy-(e.clientY-act.sy)/G.cam.s;clampCam()}
   if(act.t==='grab'){const now=performance.now(),dt=Math.max(8,now-act.lt);act.vx=act.vx*.4+(w.x-act.lx)/dt*16*.6;act.vy=act.vy*.4+(w.y-act.ly)/dt*16*.6;act.lx=w.x;act.ly=w.y;act.lt=now;
     if(Math.hypot(e.clientX-act.sx,e.clientY-act.sy)>6)act.moved=true;for(const g of G.grabs){g.x=w.x;g.y=w.y}edgePan(e)}
@@ -907,6 +984,7 @@ cv.addEventListener('pointermove',e=>{
       if(!['rampa','bant','asansor'].includes(p.k))len=act.sl;
       p.x=e0.x+Math.cos(a)*Math.max(40,Math.min(maxLen(p.k),len))/2;p.y=e0.y+Math.sin(a)*Math.max(40,Math.min(maxLen(p.k),len))/2}
     a=Math.round(a/(Math.PI/36))*(Math.PI/36);
+    if(p.k==='bant'&&Math.abs(Math.sin(a))>Math.sin(BELT_MAX)){const sg=Math.sin(a)<0?-1:1;a=Math.cos(a)>=0?sg*BELT_MAX:sg*(Math.PI-BELT_MAX);if(!act.warned){act.warned=1;toast('Bant en fazla 20° eğilebilir')}}
     p.a=a;p.len=['rampa','bant','asansor'].includes(p.k)?Math.max(p.k==='asansor'?60:40,Math.min(maxLen(p.k),len)):act.sl;
     if(p.k!=='asansor'){const e0=ends({k:p.k,x:act.sx,y:act.sy,a:act.sa,len:act.sl})[0];p.x=e0.x+Math.cos(a)*p.len/2;p.y=e0.y+Math.sin(a)*p.len/2}
     rebuild(p);p.bad=!validTool(p);placeSelp()}
@@ -915,12 +993,13 @@ function edgePan(e){return;const m=40;let dx=0,dy=0;if(e.clientX<m)dx=-1;if(e.cl
 function dropAct(){if(act&&act.t==='grab'){G.grabs=[]}act=null}
 const endPtr=e=>{
   if(!G)return;ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;if(!act)return;
+  if(act.t==='press'){if(act.ti>=0)shakeTree(act.ti);else if((G.pressHint=(G.pressHint||0)+1)<=2)toast('Aleti düzenlemek için üstüne basılı tut');act=null;return}
   if(act.t==='grab'){const m=Math.hypot(act.vx,act.vy),cap=11+lv('el_guc')*2,k=m>cap?cap/m:1;
     for(const g of G.grabs)if(G.fruits.includes(g.f)){if(act.moved)Body.setVelocity(g.f,{x:act.vx*k,y:act.vy*k});else Body.setVelocity(g.f,{x:0,y:0})}G.grabs=[]}
   if(act.t==='move'||act.t==='handle'){const p=act.p;
-    if(p.bad){if(act.fresh){removeTool(p);G.cash+=p.paid;toast('Buraya konamaz, para iade edildi');renderTools()}
-      else if(act.t==='move'){if(act.e2){p.x2=act.lx;p.y2=act.ly}else{p.x=act.lx;p.y=act.ly;rebuild(p)}toast('Buraya konamaz')}
-      else{p.x=act.sx;p.y=act.sy;p.a=act.sa;p.len=act.sl;rebuild(p);toast('Buraya konamaz')}
+    if(p.bad){if(act.fresh){removeTool(p);G.cash+=p.paid;toast((G.badWhy||'Buraya konamaz')+', para iade edildi');renderTools()}
+      else if(act.t==='move'){if(act.e2){p.x2=act.lx;p.y2=act.ly}else{p.x=act.lx;p.y=act.ly;rebuild(p)}toast(G.badWhy||'Buraya konamaz')}
+      else{p.x=act.sx;p.y=act.sy;p.a=act.sa;p.len=act.sl;rebuild(p);toast(G.badWhy||'Buraya konamaz')}
       p.bad=false}
     placeSelp()}
   act=null;
@@ -943,7 +1022,7 @@ function placeSelp(){
 }
 $('selp').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!G||!G.sel)return;const p=G.sel,a=b.dataset.a;
   const old={a:p.a,x:p.x,y:p.y};
-  if(a==='rot'||a==='rotb'){const d=(a==='rot'?1:-1)*Math.PI/12;if(p.k==='asansor')p.a+=d;else p.a+=d;rebuild(p);if(!validTool(p)){Object.assign(p,old);rebuild(p);toast('Dönünce bir şeye çarpıyor')}}
+  if(a==='rot'||a==='rotb'){const d=(a==='rot'?1:-1)*Math.PI/12;if(p.k==='asansor')p.a+=d;else p.a+=d;rebuild(p);if(!validTool(p)){Object.assign(p,old);rebuild(p);toast(G.badWhy||'Dönünce bir şeye çarpıyor')}}
   if(a==='flip'){if(p.k==='bant')p.dir*=-1;else{p.a=Math.PI-p.a;rebuild(p);if(!validTool(p)){Object.assign(p,old);rebuild(p);toast('Çevrilince bir şeye çarpıyor')}}}
   if(a==='gate'){p.open=!p.open;rebuild(p)}
   if(a==='type'){const fs=Object.keys(FR).filter(k=>G.trees.some(t=>t.f===k));p.ft=fs[(fs.indexOf(p.ft)+1)%fs.length];rebuild(p)}
@@ -991,7 +1070,7 @@ function iconFor(k){
   const c=cnv(128,96),x=c.getContext('2d');x.scale(2,2);x.translate(32,24);
   if(TOOLS[k]){x.scale(1.2,1.2);drawToolShape(x,{k,x:0,y:0,a:k==='asansor'?-Math.PI/2:k==='top'?-Math.PI/5:-.2,len:k==='asansor'?30:44,dir:1,ft:'elma',x2:14,y2:-4,open:false},1,true)}
   else if(FR[k]){const s=SPR[k];x.drawImage(s,-18,-18,36,36)}
-  else{const sym={el:'✋',gorev:'✓',otomatik:'⚙',kombo:'×4',cukur:'⌄',ikili:'⧉',catlak:'⚡',plato:'⛰',secici:'◎',platform:'▭',ruzgar:'≋',diken:'▲',donen:'✣',buz:'❄',yosun:'❦',hafif:'⇡',firtina:'↯',cok:'⧉'}[k]||'★';
+  else{const sym={ucurum:'⛔',ruzgar:'≋',yar:'⛰',el:'✋',gorev:'✓',otomatik:'⚙',kombo:'×4',cukur:'⌄',ikili:'⧉',catlak:'⚡',plato:'⛰',secici:'◎',platform:'▭',ruzgar:'≋',diken:'▲',donen:'✣',buz:'❄',yosun:'❦',hafif:'⇡',firtina:'↯',cok:'⧉'}[k]||'★';
     x.fillStyle='#ffcf4a';x.font='800 26px "Baloo 2",sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(sym,0,2)}
   return c;
 }
@@ -1093,6 +1172,10 @@ function render(){
     if(f.lv){ctx.save();ctx.translate(f.x,f.y);ctx.rotate(f.a);ctx.fillStyle='#5a6068';ctx.beginPath();ctx.roundRect(-20,-20,20,40,6);ctx.fill();ctx.restore()}}
   // arazi
   ctx.drawImage(TER,0,0);
+  for(const z of G.lv.zones||[]){const w=z.x1-z.x0;ctx.save();ctx.beginPath();ctx.rect(z.x0,-400,w,H+700);ctx.clip();ctx.fillStyle='rgba(210,40,30,.13)';ctx.fillRect(z.x0,-400,w,H+700);
+    ctx.strokeStyle='rgba(220,50,40,.30)';ctx.lineWidth=5;ctx.beginPath();for(let k=0;k<w+1300;k+=28){ctx.moveTo(z.x0+k,-400);ctx.lineTo(z.x0+k-1300,H+300)}ctx.stroke();ctx.restore();
+    ctx.strokeStyle='rgba(230,60,40,.8)';ctx.lineWidth=2/s;ctx.setLineDash([10/s,7/s]);ctx.beginPath();ctx.moveTo(z.x0,-400);ctx.lineTo(z.x0,H+300);ctx.moveTo(z.x1,-400);ctx.lineTo(z.x1,H+300);ctx.stroke();ctx.setLineDash([]);
+    const ty=Math.min(...G.lv.h.filter((_,i)=>Math.abs(i*G.lv.step-(z.x0+z.x1)/2)<w))-40;ctx.font='800 15px "Baloo 2",sans-serif';ctx.textAlign='center';ctx.lineWidth=4;ctx.strokeStyle='#2a1a0e';ctx.strokeText('⛔ inşa yok',(z.x0+z.x1)/2,ty);ctx.fillStyle='#ffd0c8';ctx.fillText('⛔ inşa yok',(z.x0+z.x1)/2,ty)}
   for(const b of G.statics)if(b.rock&&b.hp&&b.hp<b.hp0){ctx.strokeStyle='#1a120a';ctx.lineWidth=2;const n=b.hp0-b.hp;ctx.beginPath();for(let k=0;k<n;k++){const a=k*2.4;ctx.moveTo(b.position.x,b.position.y);ctx.lineTo(b.position.x+Math.cos(a)*(10+k*4),b.position.y+Math.sin(a)*(6+k*2))}ctx.stroke()}
   for(const b of G.spikes)if(b.rock){ctx.save();ctx.translate(b.position.x,b.position.y);ctx.rotate(b.angle);ctx.fillStyle='#d8dce2';const w=b.rock.w;for(let X=-w/2;X<w/2-4;X+=12){ctx.beginPath();ctx.moveTo(X,-11);ctx.lineTo(X+6,-26);ctx.lineTo(X+12,-11);ctx.fill()}ctx.restore()}
   for(const b of G.movers){const g=ctx.createLinearGradient(0,b.position.y-9,0,b.position.y+9);g.addColorStop(0,'#b8b0a4');g.addColorStop(1,'#6a625a');ctx.fillStyle=g;ctx.beginPath();b.vertices.forEach((v,i)=>i?ctx.lineTo(v.x,v.y):ctx.moveTo(v.x,v.y));ctx.fill();ctx.strokeStyle='#3a342e';ctx.stroke()}
@@ -1105,7 +1188,8 @@ function render(){
   for(const j of G.jc)drawJuicer(j);
   // aletler
   for(const p of G.tools){drawToolShape(ctx,p,1);if(p.bad){ctx.save();ctx.globalCompositeOperation='source-atop';ctx.restore();ctx.strokeStyle='#ff3030';ctx.lineWidth=3;const e=p.k==='portal'||p.k==='fan'||p.k==='top'?null:ends(p);if(e){ctx.beginPath();ctx.moveTo(e[0].x,e[0].y);ctx.lineTo(e[1].x,e[1].y);ctx.stroke()}else{ctx.beginPath();ctx.arc(p.x,p.y,26,0,7);ctx.stroke()}}}
-  if(G.hint)for(const r of G.lv.ref){drawToolShape(ctx,Object.assign({dir:1},r),.38);ctx.save();ctx.translate(r.x,r.y);ctx.rotate(r.a);ctx.strokeStyle='#fff';ctx.globalAlpha=.8;ctx.lineWidth=2/s;ctx.setLineDash([7/s,5/s]);ctx.strokeRect(-r.len/2-3,-9,r.len+6,18);ctx.restore();ctx.setLineDash([]);ctx.globalAlpha=1}
+  if(act&&act.t==='press'){const k=(performance.now()-act.t0)/LP_MS;if(k>.25){ctx.strokeStyle='#ffcf4a';ctx.lineWidth=5/s;ctx.lineCap='round';ctx.beginPath();ctx.arc(act.w.x,act.w.y,24/s,-Math.PI/2,-Math.PI/2+Math.min(1,k)*Math.PI*2);ctx.stroke()}}
+  if(G.hint)for(const r of G.lv.ref){drawToolShape(ctx,Object.assign({dir:1},r),.38);ctx.save();ctx.translate(r.x,r.y);ctx.rotate(r.a);ctx.strokeStyle='#fff';ctx.globalAlpha=.8;ctx.lineWidth=2/s;ctx.setLineDash([7/s,5/s]);if(r.k==='asansor')ctx.strokeRect(-4,-28,r.len+8,56);else if(r.k==='fan')ctx.strokeRect(-26,-26,30,52);else ctx.strokeRect(-r.len/2-3,-9,r.len+6,18);ctx.restore();ctx.setLineDash([]);ctx.globalAlpha=1}
   if(G.sel){const p=G.sel;ctx.strokeStyle='#ffcf4a';ctx.lineWidth=2/s;ctx.setLineDash([6/s,4/s]);const bb=p.b?p.b.bounds:{min:{x:p.x-26,y:p.y-26},max:{x:p.x+26,y:p.y+26}};
     if(p.k==='asansor'){const e=ends(p);ctx.beginPath();ctx.moveTo(e[0].x,e[0].y);ctx.lineTo(e[1].x,e[1].y);ctx.stroke()}else ctx.strokeRect(bb.min.x-6,bb.min.y-6,bb.max.x-bb.min.x+12,bb.max.y-bb.min.y+12);ctx.setLineDash([]);
     if(resizable(p)){const h=ends(p)[1];ctx.fillStyle='#ffcf4a';ctx.strokeStyle='#5a3a0a';ctx.lineWidth=2/s;ctx.beginPath();ctx.arc(h.x,h.y,10/s+4,0,7);ctx.fill();ctx.stroke();ctx.fillStyle='#5a3a0a';ctx.beginPath();ctx.arc(h.x,h.y,3/s+1,0,7);ctx.fill()}}
@@ -1163,7 +1247,9 @@ let last=performance.now(),hudT=0,acc=0,runT=0;
 function frame(now){
   const dt=Math.min((now-last)/1000,.05);last=now;
   coTick(dt);
-  if(G&&$('modal').hidden&&$('shop').hidden){acc+=dt;let n=0;while(acc>=1/120&&n<6){step(1/120);acc-=1/120;n++}if(n>=6)acc=0}
+  if(G&&act&&act.t==='press'&&performance.now()-act.t0>LP_MS)longPress();
+  if(G&&G.tour&&$('modal').hidden&&$('shop').hidden)tourTick(dt);
+  if(G&&!G.tour&&$('modal').hidden&&$('shop').hidden){acc+=dt;let n=0;while(acc>=1/120&&n<6){step(1/120);acc-=1/120;n++}if(n>=6)acc=0}
   if(G&&$('shop').hidden){render();hudT+=dt;if(hudT>.25){hudT=0;updHud();renderTasks();if(G.sel)placeSelp();runT=(runT||0)+1;if(runT>=12){runT=0;saveRun()}}
     const live=G.t-G.comboT<comboWin(lv('kombo_sure'))&&G.combo>1;$('combo').classList.toggle('on',live);if(live)$('combo').textContent='×'+G.combo+' KOMBO'}
   requestAnimationFrame(frame);
@@ -1364,7 +1450,7 @@ function coTick(dt){
 }
 
 resize();showHome();requestAnimationFrame(frame);
-window.__test={playTrailer,get CO(){return CO},gen,startLevel,get G(){return G},step,shakeTree,addTool,validTool,spawnFruit,rebuild,SV,fitCam};
+window.__test={SPR,FR,playTrailer,get CO(){return CO},gen,startLevel,get G(){return G},step,shakeTree,addTool,validTool,spawnFruit,rebuild,SV,fitCam};
 }
 </script>
 </body>
