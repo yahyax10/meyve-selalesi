@@ -109,6 +109,32 @@ body:not(.land) .rack{background:#140d08;padding-top:5px}
 .row .big{flex:1}
 .rot{position:fixed;inset:0;z-index:9;background:#140d08;display:grid;place-items:center;text-align:center;padding:24px}
 .rot svg{width:90px;height:90px;margin-bottom:10px}
+/* tanıtım + rehber */
+.trl{position:fixed;inset:0;z-index:10;background:#140d08}
+.trl[hidden],#coach[hidden],.trEnd[hidden],#cHand[hidden],#cRing[hidden],.cghost[hidden],#cOk[hidden]{display:none}
+#trc{position:absolute;left:0;top:0}
+.trTop{position:absolute;left:0;right:0;top:0;padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) 0 max(10px,env(safe-area-inset-left));display:flex;gap:10px;align-items:center}
+.trProg{flex:1;height:5px;border-radius:3px;background:#0005;overflow:hidden}
+#trBar{display:block;height:100%;width:0;background:var(--gold)}
+#trDots{display:flex;gap:4px}#trDots i{width:7px;height:7px;border-radius:50%;background:#0006}#trDots i.f{background:var(--gold)}
+.trSkip{border:0;border-radius:12px;background:var(--glass);padding:8px 14px;font:800 15px 'Baloo 2',sans-serif;border:1px solid #ffffff22}
+#trCap{position:absolute;left:50%;top:calc(max(8px,env(safe-area-inset-top)) + 40px);transform:translate(-50%,10px);background:rgba(22,14,8,.82);border:1px solid var(--gold);border-radius:16px;padding:9px 18px;font:800 clamp(16px,3.2vw,24px)/1.2 'Baloo 2',sans-serif;text-align:center;max-width:92%;width:max-content;opacity:0;transition:opacity .25s,transform .25s}
+#trCap.on{opacity:1;transform:translate(-50%,0)}
+.trEnd{position:absolute;inset:0;display:grid;place-items:center;background:#0007;text-align:center;padding:20px}
+.trEnd p{font-weight:800;margin:0 0 16px;opacity:.9}
+#coach{position:fixed;inset:0;z-index:5;pointer-events:none}
+.cbub{position:absolute;transform:translateX(-50%);width:min(420px,88vw);background:#fff8ec;color:#2a1a0e;border:3px solid #6b3b17;border-radius:16px;padding:10px 12px;box-shadow:0 10px 30px #0008;pointer-events:auto}
+.cbub.pop{animation:cpop .35s ease-out}
+@keyframes cpop{from{transform:translateX(-50%) scale(.85);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
+.cbub p{margin:0 0 8px;font:800 16px/1.25 'Baloo 2',sans-serif}
+.cbub .row{align-items:center}
+.cbub small{font-weight:900;color:#a33a18;margin-right:auto}
+.cbub button{border:0;border-radius:10px;padding:6px 12px;font:800 14px Nunito;background:#e6d2b2;color:#2a1a0e}
+.cbub #cOk{background:var(--acc);color:#fff;box-shadow:0 3px 0 #9a3416}
+#cHand{position:absolute;left:0;top:0;font-size:44px;line-height:1;filter:drop-shadow(0 3px 4px #0009);transition:transform .08s linear}
+#cRing{position:absolute;left:0;top:0;width:44px;height:44px;border-radius:50%;border:3px solid #fff;animation:cring .6s ease-out infinite}
+@keyframes cring{from{opacity:1;scale:.5}to{opacity:0;scale:1.4}}
+.cghost{position:absolute;left:0;top:0;width:36px;height:36px;transform-origin:center}
 @media(max-aspect-ratio:1/1){.hud{flex-wrap:wrap}.tasks{order:9;flex-basis:100%;max-width:none}.money{flex:1}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -137,6 +163,7 @@ body:not(.land) .rack{background:#140d08;padding-top:5px}
     <p class="tag">Meyveleri topla, düzeneği kur, makineleri besle. Vadi büyüdükçe makineler çoğalır.</p>
     <div class="top">
       <button class="big" id="bPlay">Oyna</button>
+      <button class="big alt" id="bTrl">▶ Tanıtım</button>
       <button class="big alt" id="bShop">Atölye<span class="pts" id="ptsH">0</span></button>
     </div>
     <div id="map"></div>
@@ -151,6 +178,12 @@ body:not(.land) .rack{background:#140d08;padding-top:5px}
   </div>
 </section>
 
+<div class="trl" id="trl" hidden><canvas id="trc"></canvas>
+  <div class="trTop"><div id="trDots"></div><div class="trProg"><b id="trBar"></b></div><button class="trSkip" id="trSkip">Geç ›</button></div>
+  <div id="trCap"></div>
+  <div class="trEnd" id="trEnd" hidden><div><div class="logo">Meyve Şelalesi</div><p>Hepsi seni bekliyor. Önce ilk meyveni sık!</p><div class="row" style="justify-content:center"><button class="big alt" id="trAgain">↺ Tekrar izle</button><button class="big" id="trGo">Başla</button></div></div></div>
+</div>
+<div id="coach" hidden><div class="cbub" id="cBub"><p id="cTx"></p><div class="row"><small id="cStep"></small><button id="cSkip">Rehberi geç</button><button id="cOk" hidden>Anladım</button></div></div><div id="cRing" hidden></div><div id="cHand" hidden>👆</div></div>
 <div class="modal" id="modal" hidden><div class="card" id="mCard"></div></div>
 <div class="rot" id="rot" hidden><div>
   <svg viewBox="0 0 100 100" fill="none" stroke="#ffcf4a" stroke-width="5" stroke-linecap="round"><rect x="30" y="14" width="40" height="72" rx="7"/><path d="M14 60a36 36 0 0 0 30 30M80 40A36 36 0 0 0 50 10"/><path d="M44 90l-2-8 8-1M50 10l8 2-2 8"/></svg>
@@ -554,7 +587,8 @@ function startLevel(L,fresh){
   G.hint=false;$('bHint').style.background='';
   showGame();renderTools();renderTasks();updHud();resize();fitCam(true);
   restoreRun();SV.last=L;save();
-  if(lvd.intro.length&&!SV.seen[L])introModal();
+  if(L===1&&!SV.seen.tut&&starsOf(1)<2){SV.seen[1]=1;save();startCoach()}
+  else if(lvd.intro.length&&!SV.seen[L])introModal();
 }
 function makeSpinner(x,y,len,w){
   const body=Body.create({parts:[Bodies.rectangle(x,y,len,14,{chamfer:{radius:6}}),Bodies.rectangle(x,y,14,len,{chamfer:{radius:6}})],frictionAir:0,density:.02,collisionFilter:{category:SPIN,mask:FRMASK}});
@@ -987,7 +1021,8 @@ function renderHome(){
   $('map').innerHTML=h;$('ptsH').textContent=SV.tohum;const cont=SV.last||SV.top;$('bPlay').textContent=(SV.run&&SV.run.L===cont?'Devam et':'Oyna')+' · Bölüm '+cont;
 }
 $('map').addEventListener('click',e=>{const b=e.target.closest('button');if(b&&!b.disabled)startLevel(+b.dataset.l)});
-$('bPlay').onclick=()=>startLevel(SV.last||SV.top);
+$('bPlay').onclick=()=>{const L=SV.last||SV.top;if(L===1&&SV.top===1&&!SV.seen.trailer)playTrailer(()=>startLevel(1));else startLevel(L)};
+$('bTrl').onclick=()=>playTrailer(()=>startLevel(SV.last||SV.top));
 $('bShop').onclick=()=>openShop(false);
 let shopFromGame=false;
 function openShop(fromGame){shopFromGame=fromGame;$('shop').hidden=false;$('home').hidden=true;renderShop()}
@@ -1126,6 +1161,7 @@ function drawJuicer(j){
 let last=performance.now(),hudT=0,acc=0,runT=0;
 function frame(now){
   const dt=Math.min((now-last)/1000,.05);last=now;
+  coTick(dt);
   if(G&&$('modal').hidden&&$('shop').hidden){acc+=dt;let n=0;while(acc>=1/120&&n<6){step(1/120);acc-=1/120;n++}if(n>=6)acc=0}
   if(G&&$('shop').hidden){render();hudT+=dt;if(hudT>.25){hudT=0;updHud();renderTasks();if(G.sel)placeSelp();runT=(runT||0)+1;if(runT>=12){runT=0;saveRun()}}
     const live=G.t-G.comboT<comboWin(lv('kombo_sure'))&&G.combo>1;$('combo').classList.toggle('on',live);if(live)$('combo').textContent='×'+G.combo+' KOMBO'}
@@ -1136,8 +1172,198 @@ try{history.pushState({ms:1},'');addEventListener('popstate',()=>{history.pushSt
 document.addEventListener('touchmove',e=>{if(!e.target.closest('.scr,.tools,.card'))e.preventDefault()},{passive:false});
 document.addEventListener('touchstart',e=>{const t=e.touches[0];if(t&&(t.clientX<24||t.clientX>innerWidth-24)&&!e.target.closest('button'))e.preventDefault()},{passive:false});
 document.addEventListener('gesturestart',e=>e.preventDefault());
+/* ===================== TANITIM VİDEOSU ===================== */
+const trc=$('trc'),tx=trc.getContext('2d');
+const VW=1000,VH=560;
+const cl=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)),ez=t=>{t=cl(t);return t*t*(3-2*t)},lp=(a,b,t)=>a+(b-a)*t;
+let TR=null,TREE=null;
+function trBg(bi){
+  const B=BIOMES[bi%BIOMES.length];
+  [.0,.5,1].forEach((_,i)=>{tx.fillStyle=B.hill[i];tx.globalAlpha=.55+i*.15;tx.beginPath();tx.moveTo(-600,900);
+    for(let X=-600;X<=1600;X+=20)tx.lineTo(X,330+i*45-Math.sin(X/(160+i*90)+i*2)*(40+i*14)-Math.sin(X/63+i)*10);tx.lineTo(1600,900);tx.fill()});
+  tx.globalAlpha=1;
+}
+function trGround(pts,bi){
+  const B=BIOMES[bi%BIOMES.length];
+  const P=pts.slice();if(P[0][0]<=0)P.unshift([-600,P[0][1]]);if(P[P.length-1][0]>=VW)P.push([1600,P[P.length-1][1]]);
+  const g=tx.createLinearGradient(0,300,0,800);g.addColorStop(0,B.dirt[0]);g.addColorStop(1,B.dirt[1]);
+  tx.fillStyle=g;tx.beginPath();tx.moveTo(P[0][0],1000);P.forEach(p=>tx.lineTo(p[0],p[1]));tx.lineTo(P[P.length-1][0],1000);tx.closePath();tx.fill();
+  tx.lineJoin='round';tx.lineCap='round';tx.strokeStyle=B.grass;tx.lineWidth=9;tx.beginPath();P.forEach((p,i)=>i?tx.lineTo(p[0],p[1]):tx.moveTo(p[0],p[1]));tx.stroke();
+  tx.strokeStyle='#ffffff30';tx.lineWidth=2;tx.beginPath();P.forEach((p,i)=>i?tx.lineTo(p[0],p[1]-3):tx.moveTo(p[0],p[1]-3));tx.stroke();
+}
+function trTree(x,base,sw=0){TREE=TREE||treeSprite('elma',0,31);tx.save();tx.translate(x,base+6);tx.rotate(sw);tx.drawImage(TREE,-TREE.w/2,-TREE.h,TREE.w,TREE.h);tx.restore()}
+function trJuicer(x,base,juice,col='#e8432f'){
+  const sp=SPR.juicer,x0=x-75,y0=base-200;tx.drawImage(sp,x0,y0,sp.w,sp.h);
+  const ax=x0+40,ay=y0+78,w=56,h=96,lh=h*cl(juice/100);
+  tx.save();tx.beginPath();tx.roundRect(ax+2,ay+2,w-4,h-4,6);tx.clip();tx.fillStyle=col;tx.fillRect(ax,ay+h-lh,w,lh);tx.restore();
+  tx.fillStyle=juice>0?'#5aff8a':'#3a6a4a';tx.font='700 10px monospace';tx.textAlign='center';tx.fillText(Math.round(juice)+'%',x0+110,y0+98);
+}
+function trFruit(x,y,k='elma',sc=1){const r=FR[k].r,s=(r*2+16)*sc;if(s<=0)return;tx.save();tx.translate(x,y);tx.rotate(x/r);tx.drawImage(SPR[k],-s/2,-s/2,s,s);tx.restore()}
+function trHand(x,y,press,al=1){if(x==null||al<=0)return;tx.save();tx.globalAlpha=al;tx.translate(x,y);
+  if(press){tx.strokeStyle='rgba(255,255,255,.9)';tx.lineWidth=3;tx.beginPath();tx.arc(0,0,20,0,7);tx.stroke()}
+  tx.scale(press?.9:1,press?.9:1);tx.font='46px sans-serif';tx.textAlign='center';tx.textBaseline='top';tx.shadowColor='#0008';tx.shadowBlur=8;tx.fillText('👆',2,-4);tx.restore()}
+function trLabel(s,x,y,a){if(a<=0)return;tx.save();tx.globalAlpha=cl(a);tx.font='800 17px "Baloo 2",sans-serif';const w=tx.measureText(s).width+20;
+  tx.fillStyle='rgba(22,14,8,.78)';tx.beginPath();tx.roundRect(x-w/2,y-15,w,28,10);tx.fill();tx.fillStyle='#ffcf4a';tx.textAlign='center';tx.textBaseline='middle';tx.fillText(s,x,y);tx.restore()}
+function trPop(s,x,y,a){if(a<0||a>1)return;tx.save();tx.globalAlpha=1-a;tx.font='800 24px "Baloo 2",sans-serif';tx.textAlign='center';tx.lineWidth=5;tx.strokeStyle='#2a1a0e';tx.strokeText(s,x,y-a*50);tx.fillStyle='#ffcf4a';tx.fillText(s,x,y-a*50);tx.restore()}
+function trTool(p,pop=1){if(pop<=0)return;const e=p.k==='asansor'?ends(p):null,cx=e?(e[0].x+e[1].x)/2:p.x,cy=e?(e[0].y+e[1].y)/2:p.y,s=ez(pop)*(1+.15*Math.sin(cl(pop)*Math.PI));
+  tx.save();tx.translate(cx,cy);tx.scale(s,s);tx.translate(-cx,-cy);drawToolShape(tx,Object.assign({dir:1},p),1);tx.restore()}
+const once=(k,f)=>{if(!TR.fired.has(k)){TR.fired.add(k);try{f()}catch(e){}}};
+const bez=(a,c,b,t)=>[(1-t)*(1-t)*a[0]+2*(1-t)*t*c[0]+t*t*b[0],(1-t)*(1-t)*a[1]+2*(1-t)*t*c[1]+t*t*b[1]];
+const rampY=(A,B,x)=>A[1]+(B[1]-A[1])*(x-A[0])/(B[0]-A[0]);
+/* elle taşıma: el yaklaşır, tutar, huniye sürükler, bırakır */
+function trDrag(a,f,j,H0=[600,380],dur=1){
+  if(a<0)return{fx:f[0],fy:f[1],sc:1};
+  if(a<.5){const e=ez(a/.5);return{hx:lp(H0[0],f[0],e),hy:lp(H0[1],f[1],e)+6,fx:f[0],fy:f[1],sc:1}}
+  if(a<.65)return{hx:f[0],hy:f[1]+6,pr:1,fx:f[0],fy:f[1],sc:1};
+  if(a<.65+dur){const p=bez(f,[(f[0]+j[0])/2,Math.min(f[1],j[1])-120],j,ez((a-.65)/dur));return{hx:p[0],hy:p[1]+6,pr:1,fx:p[0],fy:p[1],sc:1}}
+  const e=(a-.65-dur)/.3;if(e<1)return{hx:j[0]+e*50,hy:j[1]+6-e*30,ha:1-e,fx:j[0],fy:j[1]+e*40,sc:1-e};
+  return{done:1,ha:0}
+}
+/* meyve yolu: parçalı hareket (düş, kay, taşı, düş) */
+function trPath(a,segs){let t=a;for(const s of segs){if(t<s.d){const u=t/s.d;if(s.arc)return[lp(s.p[0],s.q[0],u),lp(s.p[1],s.q[1],u)-s.arc*4*u*(1-u)];const e=s.fall?u*u:u;return[lp(s.p[0],s.q[0],e),lp(s.p[1],s.q[1],e)]}t-=s.d}return null}
+const pathDur=segs=>segs.reduce((a,s)=>a+s.d,0);
+const comboOf=n=>Math.floor((Math.sqrt(8*n+1)-1)/2);
+
+const SCENES=[
+ {d:4,cap:'Ağaca dokun, meyveler düşsün',draw(t){
+   const gy=470;trBg(0);trGround([[0,gy],[VW,gy]],0);
+   const taps=[1,2.3];let sw=0;for(const T of taps)if(t>T)sw+=Math.sin((t-T)*38)*Math.exp(-(t-T)*4)*.04;
+   trTree(300,gy,sw);trJuicer(760,gy,0);
+   taps.forEach((T,ti)=>{if(t>T)once('sh'+ti,()=>sfx('shake'));
+     [[255,300,-1],[305,285,1],[350,305,1]].forEach(([x0,y0,dir],k)=>{const d=t-T-k*.05;if(d<0)return;const tl=Math.sqrt((gy-13-y0)/900);
+       const y=Math.min(gy-13,y0+900*d*d),x=x0+(d>tl?dir*(30+ti*28)*(1-Math.exp(-(d-tl)*3)):0);trFruit(x,y)})});
+   let hx,hy,pr=0;const P0=[560,330],P1=[300,300];
+   if(t<1.6){const e=ez(t/.8),e2=ez((t-1.3)/.6);hx=lp(P0[0],P1[0],e);hy=lp(P0[1],P1[1],e);pr=t>.85&&t<1.15}
+   if(t>=1.6&&t<3){hx=lp(300,330,ez((t-1.6)/.5));hy=320;pr=t>2.15&&t<2.45}
+   if(t<3)trHand(hx,hy,pr,1);else trHand(330,320,0,1-(t-3)*2);
+ }},
+ {d:4.6,cap:'Meyveyi tut, makinenin hunisine taşı',draw(t){
+   const gy=470,J=[760,262];trBg(0);trGround([[0,gy],[VW,gy]],0);trTree(300,gy);
+   const A=trDrag(t,[408,457],J,[600,380],1),B=trDrag(t-2.1,[350,457],J,[700,330],.8);
+   const n=(A.done?1:0)+(B.done?1:0);
+   const jv=lp(0,22,ez((t-2.05)/.5))+lp(0,22,ez((t-3.95)/.5));trJuicer(760,gy,jv);
+   [[280,457],[318,457]].forEach(p=>trFruit(p[0],p[1]));
+   for(const D of[B,A]){if(!D.done)trFruit(D.fx,D.fy,'elma',D.sc)}
+   if(A.done)once('e1',()=>sfx('eat',1));if(B.done)once('e2',()=>sfx('eat',1));
+   trPop('+$1',760,230,(t-2.05)/1);trPop('+$1',760,230,(t-3.95)/1);
+   const H=B.hx!=null&&t>2.1?B:A;trHand(H.hx,H.hy,H.pr,H.ha==null?1:H.ha);
+   tx.save();tx.font='800 40px "Baloo 2",sans-serif';tx.fillStyle='#ffcf4a';tx.lineWidth=6;tx.strokeStyle='#2a1a0e';tx.textAlign='left';tx.strokeText('$'+n,40,70);tx.fillText('$'+n,40,70);tx.restore();
+ }},
+ {d:5.4,cap:'Kaydırak ve konveyör kur, düzenek kendi çalışsın',draw(t){
+   const bi=0,A=[110,232],B=[400,300],C=[410,322],D=[650,322];
+   trBg(bi);trGround([[0,360],[330,360],[390,545],[VW,545]],bi);trTree(180,360);
+   const n=7,arr=[];
+   for(let i=0;i<n;i++){const ts=1.1+i*.36,x0=140+((i*53)%80),y1=rampY(A,B,x0)-19;
+     const segs=[{p:[x0,190],q:[x0,y1],d:.3,fall:1},{p:[x0,y1],q:[B[0],B[1]-19],d:(B[0]-x0)/420},{p:[C[0],C[1]-21],q:[D[0],D[1]-21],d:.8},{p:[D[0],D[1]-21],q:[735,372],d:.35,arc:30}];
+     const a=t-ts;if(a<0)continue;const pos=trPath(a,segs);if(pos)arr.push(pos);else{once('s3'+i,()=>sfx('eat',1));arr.push(null)}}
+   const got=arr.filter(p=>!p).length;trJuicer(740,545,got*12);
+   trTool({k:'rampa',x:(A[0]+B[0])/2,y:(A[1]+B[1])/2,a:Math.atan2(B[1]-A[1],B[0]-A[0]),len:Math.hypot(B[0]-A[0],B[1]-A[1])},(t-.1)/.45);
+   trTool({k:'bant',x:(C[0]+D[0])/2,y:C[1],a:0,len:D[0]-C[0]},(t-.55)/.45);
+   if(t>.1)once('p1',()=>sfx('place'));if(t>.55)once('p2',()=>sfx('place'));
+   arr.forEach(p=>p&&trFruit(p[0],p[1]));
+   trLabel('Kaydırak',270,235,(t-.4)*3);trLabel('Konveyör',530,360,(t-.85)*3);
+   for(let i=0;i<got;i++)trPop('+$1',740,330,(t-(1.1+i*.36+2.1))/1);
+   if(t<1.2)trHand(lp(270,530,ez((t-.3)/.4)),lp(275,330,ez((t-.3)/.4)),t>.1&&t<.25||t>.6&&t<.75,1-ez((t-.9)/.3));
+ }},
+ {d:4.8,cap:'Kapakla biriktir, hepsini birden bırak: KOMBO!',draw(t){
+   const bi=1,A=[110,232],B=[600,350],To=2.7,ang=Math.atan2(B[1]-A[1],B[0]-A[0]),c=Math.cos(ang),s=Math.sin(ang);
+   trBg(bi);trGround([[0,360],[330,360],[390,560],[VW,560]],bi);trTree(180,360);
+   trTool({k:'rampa',x:(A[0]+B[0])/2,y:(A[1]+B[1])/2,a:ang,len:Math.hypot(B[0]-A[0],B[1]-A[1])},1);
+   let got=0;const fr=[];
+   for(let i=0;i<10;i++){const ts=.15+i*.17,x0=130+((i*37)%80),y1=rampY(A,B,x0)-19,d=14+i*27,rx=B[0]-c*d,ry=B[1]-s*d-19;
+     const dep=To+i*.13,a=t-ts;if(a<0)continue;let p;
+     if(t<dep){p=trPath(a,[{p:[x0,190],q:[x0,y1],d:.3,fall:1},{p:[x0,y1],q:[rx,ry],d:Math.max(.05,(rx-x0)/420)}])||[rx,ry]}
+     else p=trPath(t-dep,[{p:[rx,ry],q:[B[0],B[1]-19],d:Math.max(.04,d/700)},{p:[B[0],B[1]-19],q:[660,392],d:.3,arc:14}]);
+     if(p)fr.push(p);else{got++;once('k'+i,()=>sfx('eat',comboOf(got)))}}
+   const C=comboOf(got);trJuicer(670,560,got*8,'#ff9a1f');
+   fr.forEach(p=>trFruit(p[0],p[1]));
+   const op=ez((t-To)/.25);tx.save();tx.translate(B[0]+4,B[1]-6);tx.rotate(-op*1.4);drawToolShape(tx,{k:'kapak',x:0,y:-28,a:Math.PI/2,len:60,open:false},1);tx.restore();
+   trLabel(t<To?'Kapak: kapalı':'Açıldı!',560,240,(t-.4)*3);
+   if(t>To-.9&&t<To+.6)trHand(lp(760,604,ez((t-To+.9)/.5)),lp(330,300,ez((t-To+.9)/.5)),t>To-.2&&t<To+.05,1-ez((t-To-.2)/.4));
+   if(C>1){const sc=1+.25*Math.max(0,1-(t-To-.13*got)*3);tx.save();tx.translate(VW/2,120);tx.scale(sc,sc);tx.font='800 64px "Baloo 2",sans-serif';tx.textAlign='center';tx.lineWidth=8;tx.strokeStyle='#8a2d10';tx.strokeText('×'+C+' KOMBO',0,0);tx.fillStyle='#ffcf4a';tx.fillText('×'+C+' KOMBO',0,0);tx.restore()}
+ }},
+ {d:5.6,cap:'Trambolin, fan, asansör… uçurumları aş',draw(t){
+   const bi=2;trBg(bi);
+   const pg=tx.createLinearGradient(0,440,0,700);pg.addColorStop(0,'#2a140a');pg.addColorStop(1,'#0a0503');tx.fillStyle=pg;tx.fillRect(296,440,268,600);
+   trGround([[0,440],[300,440]],bi);trGround([[560,470],[760,470],[772,400],[VW,400]],bi);
+   trTool({k:'yay',x:240,y:428,a:0,len:76},1);trTool({k:'fan',x:380,y:232,a:0},1);
+   trTool({k:'asansor',x:660,y:466,a:-Math.PI/2,len:300},1);trTool({k:'rampa',x:738,y:183,a:Math.atan2(30,125),len:128},1);
+   for(let k=0;k<6;k++){const o=(t*160+k*53)%230;tx.strokeStyle='rgba(255,255,255,'+(.5*(1-o/230))+')';tx.lineWidth=2;tx.beginPath();tx.moveTo(404+o,232+(k%3-1)*16);tx.lineTo(426+o,232+(k%3-1)*16);tx.stroke()}
+   let got=0;const segs=[{p:[240,90],q:[240,402],d:.42,fall:1},{p:[240,402],q:[650,452],d:.9,arc:250},{p:[650,452],q:[660,165],d:.95},{p:[675,165],q:[800,190],d:.45},{p:[800,190],q:[850,228],d:.25,arc:10}];
+   [.2,1.3,2.4].forEach((ts,i)=>{const a=t-ts;if(a<0)return;if(a>.42)once('b'+i,()=>sfx('boing'));const p=trPath(a,segs);if(p)trFruit(p[0],p[1],'portakal');else{got++;once('f5'+i,()=>sfx('eat',1))}});
+   trJuicer(860,400,got*14,'#ff9a1f');
+   trLabel('Trambolin',240,470,(t-.55)*3);trLabel('Fan',380,185,(t-.9)*3);trLabel('Asansör',600,330,(t-1.6)*3);
+ }},
+ {d:4.4,cap:'12 bölge, yüzlerce bölüm, yeni meyveler',draw(t){
+   const bi=Math.floor(t/.37)%BIOMES.length;trBg(bi);trGround([[0,470],[VW,470]],bi);
+   ['elma','portakal','limon','uzum','karpuz'].forEach((k,i)=>{const x=((t*240+i*190)%1200)-100,r=FR[k].r;trFruit(x,470-r-Math.abs(Math.sin(t*5+i))*70,k,1.4)});
+   if(TR&&TR.end)return;tx.save();tx.font='800 54px "Baloo 2",sans-serif';tx.textAlign='center';tx.lineWidth=8;tx.strokeStyle='#2a1a0e';tx.strokeText(BIOMES[bi].n,VW/2,200);tx.fillStyle='#fff8ec';tx.fillText(BIOMES[bi].n,VW/2,200);
+   tx.font='800 22px Nunito';tx.lineWidth=5;const s='Bölge '+(bi+1)+' / '+BIOMES.length;tx.strokeText(s,VW/2,240);tx.fillStyle='#ffcf4a';tx.fillText(s,VW/2,240);tx.restore();
+ }}];
+function trSize(){const d=Math.min(devicePixelRatio||1,2);trc.width=innerWidth*d;trc.height=innerHeight*d;trc.style.width=innerWidth+'px';trc.style.height=innerHeight+'px';return d}
+function trFrame(now){
+  if(!TR)return;const d=trSize();if(TR.t0==null)TR.t0=now;
+  let t=(now-TR.t0)/1000,i=0;while(i<SCENES.length&&t>=SCENES[i].d){t-=SCENES[i].d;i++}
+  const end=i>=SCENES.length;if(end){i=SCENES.length-1;t=SCENES[i].d*.5+((now-TR.t0)/1000)%3;if(!TR.end){TR.end=1;$('trEnd').hidden=false;$('trCap').classList.remove('on')}}
+  if(i!==TR.i&&!end){TR.i=i;TR.fired=new Set();const cp=$('trCap');cp.classList.remove('on');setTimeout(()=>{if(TR&&TR.i===i){cp.textContent=SCENES[i].cap;cp.classList.add('on')}},120);
+    $('trDots').innerHTML=SCENES.map((_,k)=>`<i class="${k<=i?'f':''}"></i>`).join('')}
+  if(!end){const sum=SCENES.slice(0,i).reduce((a,s)=>a+s.d,0),tot=SCENES.reduce((a,s)=>a+s.d,0);$('trBar').style.width=((sum+t)/tot*100)+'%'}else $('trBar').style.width='100%';
+  const B=BIOMES[(i===5?Math.floor(t/.37):[0,0,0,1,2][i])%BIOMES.length];
+  tx.setTransform(d,0,0,d,0,0);const sg=tx.createLinearGradient(0,0,0,innerHeight);sg.addColorStop(0,B.sky[0]);sg.addColorStop(1,B.sky[1]);tx.fillStyle=sg;tx.fillRect(0,0,innerWidth,innerHeight);
+  const s=Math.min(innerWidth/VW,innerHeight/VH),ox=(innerWidth-VW*s)/2,oy=(innerHeight-VH*s)/2;
+  tx.setTransform(d*s,0,0,d*s,ox*d,oy*d);
+  try{SCENES[i].draw(Math.min(t,SCENES[i].d))}catch(e){console.error(e)}
+  requestAnimationFrame(trFrame);
+}
+function playTrailer(done){
+  TR={i:-1,t0:null,fired:new Set(),done};$('trl').hidden=false;$('trEnd').hidden=true;$('trCap').textContent='';
+  requestAnimationFrame(trFrame);
+}
+function endTrailer(go){if(!TR)return;const cb=TR.done;TR=null;$('trl').hidden=true;SV.seen.trailer=1;save();if(go&&cb)cb();else showHome()}
+$('trSkip').onclick=()=>endTrailer(true);
+$('trGo').onclick=()=>endTrailer(true);
+$('trAgain').onclick=()=>{if(TR){TR.t0=null;TR.i=-1;TR.end=0;$('trEnd').hidden=true}};
+
+/* ===================== İLK BÖLÜM REHBERİ ===================== */
+const COACH=[
+ {tx:'Ağaca dokun, meyveler düşsün',tg:'tree'},
+ {tx:'Meyveye basılı tut ve makinenin hunisine sürükle',tg:'drag'},
+ {tx:'Süper! Her meyve para kazandırır. Ağaç → meyve → huni, böyle devam et',tg:'#hC',auto:4.5},
+ {tx:'Görevler burada. 2 tanesi bitince sağ üstte “Sonraki” çıkar',tg:'#tasks',ok:'Anladım'},
+ {tx:'Takılırsan “?” düğmesi bölümün bir çözümünü gösterir',tg:'#bHint',ok:'Başla!'}];
+let CO=null;
+const coGhost=(()=>{const c=cnv(36,36);c.className='cghost';return c})();
+$('coach').appendChild(coGhost);
+function startCoach(){CO={i:0,t:0};$('coach').hidden=false;coSet(0)}
+function coSet(i){CO.i=i;CO.t=0;const s=COACH[i];$('cTx').textContent=s.tx;$('cOk').hidden=!s.ok;if(s.ok)$('cOk').textContent=s.ok;$('cStep').textContent=(i+1)+'/'+COACH.length;$('cBub').classList.remove('pop');void $('cBub').offsetWidth;$('cBub').classList.add('pop')}
+function endCoach(){CO=null;$('coach').hidden=true;SV.seen.tut=1;save()}
+$('cSkip').onclick=()=>{endCoach()};
+$('cOk').onclick=()=>{if(!CO)return;if(CO.i<COACH.length-1)coSet(CO.i+1);else{endCoach();toast('İyi eğlenceler!')}};
+function domPt(sel){const el=$(sel.slice(1));if(!el||el.hidden||!el.offsetWidth)return null;const r=el.getBoundingClientRect();return{x:r.left+Math.min(r.width/2,60),y:r.bottom+4}}
+function coTick(dt){
+  if(!CO)return;if(!G||G.L!==1){$('coach').hidden=true;return}
+  $('coach').hidden=!$('modal').hidden||!$('shop').hidden;CO.t+=dt;
+  const s=COACH[CO.i],h=$('cHand'),ring=$('cRing');let p=null,press=false,ghost=null;
+  if(CO.i===0&&G.fruits.length){coSet(1);return}
+  if(CO.i===1){if(G.got>=1){sfx('task');coSet(2);return}if(!G.fruits.length){coSet(0);return}}
+  if(s.auto&&CO.t>s.auto){coSet(CO.i+1);return}
+  if(s.tg==='tree'){const t=G.trees[0],q=w2s(t.x,t.y-150);p={x:OX+q.x,y:OY+q.y};press=(CO.t%1.2)>.8}
+  else if(s.tg==='drag'){
+    if(G.grabs.length){p=null}else{
+      const j=G.jc[0];let f=null,bd=1e9;for(const b of G.fruits){const d=Math.abs(b.position.x-j.x);if(d<bd){bd=d;f=b}}
+      const a=w2s(f.position.x,f.position.y),b=w2s(j.x,j.y-190),A={x:OX+a.x,y:OY+a.y},Bp={x:OX+b.x,y:OY+b.y};
+      const ph=(CO.t%2.2)/2.2;
+      if(ph<.15){p=A;press=ph>.08}else if(ph<.75){const e=ez((ph-.15)/.6),cx=(A.x+Bp.x)/2,cy=Math.min(A.y,Bp.y)-80;p={x:(1-e)*(1-e)*A.x+2*(1-e)*e*cx+e*e*Bp.x,y:(1-e)*(1-e)*A.y+2*(1-e)*e*cy+e*e*Bp.y};press=true;ghost=p}else{p=Bp;h.style.opacity=String(1-(ph-.75)*4)}
+      if(ph<.75)h.style.opacity='1'}}
+  else{p=domPt(s.tg);press=(CO.t%1.2)>.8;h.style.opacity='1'}
+  if(s.tg!=='drag')h.style.opacity='1';
+  if(p){h.hidden=false;h.style.transform=`translate(${p.x-20}px,${p.y-4}px) scale(${press?.88:1})`;ring.hidden=!press;ring.style.transform=`translate(${p.x-22}px,${p.y-22}px)`}else{h.hidden=true;ring.hidden=true}
+  if(ghost){coGhost.hidden=false;const k=FR[G.trees[0].f].r*2+16;const sc=G.cam.s*k/36;coGhost.getContext('2d').clearRect(0,0,36,36);coGhost.getContext('2d').drawImage(SPR[G.trees[0].f],0,0,36,36);coGhost.style.transform=`translate(${ghost.x-18}px,${ghost.y-18}px) scale(${sc})`;coGhost.style.opacity='.75'}else coGhost.hidden=true;
+  const hud=$('hud').offsetHeight,bub=$('cBub');bub.style.top=(hud+(s.tg==='#tasks'||s.tg==='#hC'||s.tg==='#bHint'?70:10))+'px';bub.style.left=(OX+cw/2)+'px';
+}
+
 resize();showHome();requestAnimationFrame(frame);
-window.__test={gen,startLevel,get G(){return G},step,shakeTree,addTool,validTool,spawnFruit,rebuild,SV,fitCam};
+window.__test={playTrailer,get CO(){return CO},gen,startLevel,get G(){return G},step,shakeTree,addTool,validTool,spawnFruit,rebuild,SV,fitCam};
 }
 </script>
 </body>
