@@ -870,7 +870,8 @@ cv.addEventListener('pointerdown',e=>{
   // seçili aletin tutamağı
   if(G.sel&&resizable(G.sel)){const h=ends(G.sel)[1];if(Math.hypot(w.x-h.x,w.y-h.y)<rad+10){act={t:'handle',p:G.sel,sx:G.sel.x,sy:G.sel.y,sa:G.sel.a,sl:G.sel.len};return}}
   // meyve (doğrudan üstüne basınca)
-  let fr=null,bd=1e9;for(const f of G.fruits){const d=Math.hypot(f.position.x-w.x,f.position.y-w.y);if(d<FR[f.fr].r+rad*.6&&d<bd){bd=d;fr=f}}
+  const inCrown=G.trees.some(t=>Math.abs(w.x-t.x)<80&&w.y>t.y-250&&w.y<t.y-60);
+  let fr=null,bd=1e9;if(!inCrown)for(const f of G.fruits){const d=Math.hypot(f.position.x-w.x,f.position.y-w.y);if(d<FR[f.fr].r+rad*.6&&d<bd){bd=d;fr=f}}
   const ht=hitTool(w,rad*.6);
   if(fr&&!(ht&&ht.p===G.sel)){
     const n=1+Math.ceil(lv('el_guc')/2);const extra=G.fruits.filter(f=>f!==fr&&Math.hypot(f.position.x-fr.position.x,f.position.y-fr.position.y)<FR[fr.fr].r*2.6).slice(0,n-1);
